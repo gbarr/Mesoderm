@@ -9,6 +9,7 @@ use Lingua::EN::Inflect::Number qw(to_S to_PL);
 use Data::Dumper;
 use MooseX::DBIC::Scaffold::Component;
 use MooseX::DBIC::Scaffold::Relationship;
+use MooseX::DBIC::Scaffold::Mapping;
 
 
 has 'schema' => (
@@ -200,6 +201,15 @@ sub _ignore_constraint {
   return $ignore;
 }
 
+sub mapping_accessor {
+  my ($self, $mapping) = @_;
+  my $method =
+    ($mapping->left->type eq 'has_many' or $mapping->right->type eq 'has_many')
+    ? 'to_plural'
+    : 'to_singular';
+  $self->$method(lc $mapping->right->foreign_table->name);
+}
+
 sub relationship_accessor {
   my ($self, $relationship) = @_;
   my $method = $relationship->type . "_accessor";
@@ -265,13 +275,15 @@ sub column_accessor { my ($self, $column) = @_; return lc($column->name) }
 
 sub reciprocate_relationship {
   my ($self, $r) = @_;
-  MooseX::DBIC::Scaffold::Relationship->new(
-    name            => $r->foreign_table->name . "__" . $r->name,
-    table           => $r->foreign_table,
-    columns         => [$r->foreign_columns],
-    foreign_table   => $r->table,
-    foreign_columns => [$r->columns],
-  );
+  $r->reciprocal;
+}
+
+sub is_mapping_table {
+  my ($self, $t) = @_;
+  my $rel = $t->get_extra('relationships') or return 0;
+  ## FIXME, need better checks to determine a mapping table
+  return 0 unless @$rel == 2;
+  return 1;
 }
 
 sub produce {
@@ -313,6 +325,34 @@ sub produce {
     }
   }
 
+  foreach my $t ($schema->get_tables) {
+    if ($self->is_mapping_table($t)) {
+      my $rel = $t->get_extra('relationships');
+      next unless $rel and @$rel == 2;
+      my ($left, $right) = @$rel;
+      for my $loop (1, 2) {
+        my $lr  = $left->reciprocal;
+        my $m   = $self->build_mapping($lr, $right);
+        my $map = $lr->table->get_extra('mappings');
+        $lr->table->add_extra(mappings => $map = []) unless $map;
+        push @$map, $m;
+
+        ($left, $right) = ($right, $left);
+      }
+    }
+  }
+
+  # Build accessor names
+  foreach my $t ($schema->get_tables) {
+    my $rel = $t->get_extra('relationships') or next;
+    $_->accessor($self->relationship_accessor($_)) for @$rel;
+  }
+
+  foreach my $t ($schema->get_tables) {
+    my $map = $t->get_extra('mappings') or next;
+    $_->accessor($self->mapping_accessor($_)) for @$map;
+  }
+
   $self->write(output => $fh);
 }
 
@@ -330,6 +370,17 @@ sub build_relationship {
     foreign_table   => $f_table,
     foreign_columns => \@f_columns,
   );
+}
+
+sub build_mapping {
+  my ($self, $left, $right) = @_;
+
+  my $r = MooseX::DBIC::Scaffold::Mapping->new(
+    name  => $left->name . "__" . $right->name,
+    left  => $left,
+    right => $right,
+  );
+  return $r;
 }
 
 sub write {
@@ -431,7 +482,6 @@ sub write_table {
   }
 
   my @rel = @{$table->get_extra('relationships') || []};
-  $_->accessor($self->relationship_accessor($_)) for @rel;
   foreach my $rel (sort { $a->accessor cmp $b->accessor } @rel) {
     my $foreign_class   = $self->result_class($rel->foreign_table);
     my $type            = $rel->type;
@@ -444,14 +494,11 @@ sub write_table {
     print $fh $column_map, $attr, ");\n";
   }
 
-## FIXME
-##  foreach my $mapping ($table->mappings) {
-##    my $accessor = $mapping->accessor;
-##    my $step1 = $mapping->step1->accessor;
-##    my $step2 = $mapping->step2->accessor;
-##    my $attr = $mapping->attr ? ", " . _dump_data($mapping->attr,"  ") : "";
-##    print $fh "  __PACKAGE__->many_to_many( $accessor => qw[ $step1 $step2 ]$attr );\n";
-##  }
+  my @map = @{$table->get_extra('mappings') || []};
+  foreach my $map (sort { $a->accessor cmp $b->accessor } @map) {
+    printf $fh "  __PACKAGE__->many_to_many( '%s' => qw[ %s %s ]);\n",
+      $map->accessor, $map->left->accessor, $map->right->accessor;
+  }
 
   if (keys %insert_default) {
     print $fh "  sub insert {\n";

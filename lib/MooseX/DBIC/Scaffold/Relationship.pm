@@ -10,6 +10,7 @@ has type            => (is => 'rw');
 has accessor        => (is => 'rw');
 has table           => (is => 'rw', weak_ref => 1);
 has foreign_table   => (is => 'rw', weak_ref => 1);
+has _reciprocal     => (is => 'rw', weak_ref => 1);
 has columns         => (is => 'rw', isa => 'ArrayRef', auto_deref => 1, default => sub { [] });
 has foreign_columns => (is => 'rw', isa => 'ArrayRef', auto_deref => 1, default => sub { [] });
 has attrs => (
@@ -23,6 +24,27 @@ has attrs => (
     has_no_attrs => 'is_empty',
   },
 );
+
+sub _build_reciprocal {
+  my $self = shift;
+
+  MooseX::DBIC::Scaffold::Relationship->new(
+    name            => $self->foreign_table->name . "__" . $self->name,
+    table           => $self->foreign_table,
+    columns         => [$self->foreign_columns],
+    foreign_table   => $self->table,
+    foreign_columns => [$self->columns],
+    _reciprocal     => $self,
+  );
+}
+
+# We have to jump through hoops here because _reciprocal is a weakref, so we cannot use lazy_build
+sub reciprocal {
+  my $self = shift;
+  my $r    = $self->_reciprocal;
+  $self->_reciprocal($r = $self->_build_reciprocal) unless $r;
+  return $r;
+}
 
 sub BUILD {
   my ($self) = @_;
