@@ -74,7 +74,7 @@ sub execute {
   my $output = $self->output;
 
   print "Writing scaffold for $schema_class to $output\n";
-  my $output_dir = Path::Class->file($output)->parent;
+  my $output_dir = Path::Class::file($output)->parent;
   $output_dir->mkpath;
   my $tmp_output = File::Temp->new(DIR => $output_dir);
 
