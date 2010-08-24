@@ -599,6 +599,125 @@ __END__
 
 MooseX::DBIC::Scaffold - Schema class scaffold generator for DBIx::Class
 
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+=head2 Package Hierarchy
+
+Given a C<schema_class> name of C<Schema> and a schema containing a single table C<foo> the
+following packages would be created or search for
+
+=over
+
+=item Schema
+
+Top level schema class. The user needs to provide this themselves. See L</Example Schema Class>
+
+=item Schema::_scaffold
+
+The main generated package that will be a L<Moose::Role> to be consumed into the top level schema
+class. See L</The _scaffold Role>
+
+=item Schema::_dbic
+
+A subclass of L<DBIx::Class> that will be used to register the generated classes.
+
+=item Schema::Foo
+
+=item Schema::Role::Foo
+
+=item Schema::ResultSet::Foo
+
+=item Schema::ResultSet::Role::Foo
+
+=back
+
+=head2 The _scaffold Role
+
+=head2 Example Schema Class
+
+The minimum requirement for a schema class is that it providers a method C<connect_args>. The
+result of calling this method will be passed to the connect method of L<DBIx::Class>
+
+  package Schema;
+  use Moose;
+  with 'Schema::_scaffold';
+
+  sub connect_args { 
+      return @args_for_dbix_class_connect;
+  }
+
+  1;
+
+Some other useful additions
+
+  # delegate txn_* methods to the DBIx::Class object itself
+  has '+dbic' => (handles => [qw(txn_do txn_scope_guard txn_begin txn_commit txn_rollback)]);
+
+  # Fetch a DBI handle
+  sub dbh {
+    shift->dbic->storage->dbh;
+  }
+
+=head1 ATTRIBUTES
+
+=over
+
+=item schema
+
+Required.
+A L<SQL::Translator::Object::Schema> object that the scaffolding will be generated from
+
+=item schema_class
+
+Required.
+Package name that the scaffold will be generated for. The actual package created will be a
+L<Moose::Role> with the named C<schema_class> plus C<::_scaffold>
+
+=item result_class_namespace
+
+Optional.
+Namespace used by default to prefix package names generated for L<DBIx::Class> result classes.
+Defaults to C<schema_class>
+
+=item resultset_class_namespace
+
+Optional.
+Namespace used by default to prefix package names generated for L<DBIx::Class> result set classes.
+Defaults to C<result_class_namespace> plus C<::ResultSet>
+
+=item result_role_namespace
+
+Optional.
+Namespace that will be searched for, during scaffolding, for roles to add to result classes. The
+generated code will include C<with> statements for any role that is found during scaffolding.
+Defaults to C<result_class_namespace> plus C<::Role>
+
+=item resultset_role_namespace
+
+Optional.
+Namespace that will be searched for, during scaffolding, for roles to add to result set classes.
+The generated code will include C<with> statements for any role that is found during scaffolding.
+Defaults to C<resultset_class_namespace> plus C<::Role>
+
+=back
+
+=head1 METHODS
+
+=over
+
+=back
+
+=head1 SEE ALSO
+
+L<DBIx::Class>,
+L<Moose>,
+L<SQL::Translator|http://github.com/arcanez/SQL-Translator>
+
+At time of writing the version required is not available on CPAN and needs
+to be fetched from github. L<http://github.com/arcanez/SQL-Translator>
+
 =head1 AUTHOR
 
 Graham Barr C<< <gbarr@cpan.org> >>
