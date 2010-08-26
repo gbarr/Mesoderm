@@ -623,27 +623,27 @@ MooseX::DBIC::Scaffold - Schema class scaffold generator for DBIx::Class
 C<MooseX::DBIC::Scaffold> creates a scaffold of code for L<DBIx::Class> using a schema object from
 L<SQL::Translator|http://github.com/arcanez/SQL-Translator>. At time of writing the version of
 L<SQL::Translator|http://github.com/arcanez/SQL-Translator> required is not available on CPAN and must be
-fetched directly from L<github|http://github.com/arcanez/SQL-Translator>
+fetched directly from L<github|http://github.com/arcanez/SQL-Translator>.
 
 The result is a hierarchy of packages describes below. L<Moose> is used so that any custom methods
 needed to be added to the result or resultset classes can be done by writing L<Moose::Role> classes.
-This alows separation between generated code and written code.
+This allows separation between generated code and written code.
 
 C<MooseX::DBIC::Scaffold> defines methods to map table names to class names, relationships and
 columns to accessor methods. It is also possible to have any table, relationship or column
 excluded from the generated model. If the defaults do not meet your needs, then it is trvial to
-subclass C<MooseX::DBIC::Scaffold> and provide overrides
+subclass C<MooseX::DBIC::Scaffold> and provide overrides.
 
 =head2 Package Hierarchy
 
 Given a C<schema_class> name of C<Schema> and a schema containing a single table C<foo_bars> the
-following packages would be created or search for with the default settings
+following packages would be created or searched for with the default settings.
 
 =over
 
 =item Schema
 
-Top level schema class. The user needs to provide this themselves. See L</Example Schema Class>
+Top level schema class. The user needs to provide this themselves. See L</Example Schema Class>.
 
 =item Schema::_scaffold
 
@@ -665,29 +665,29 @@ Schema::FooBar will be the result class for the table C<foo_bars>
 =item Schema::Role::FooBar
 
 During scaffolding L<Module::Pluggable> will be used to search for Schema::Role::FooBar, which should be a
-L<Moose::Role> class.  If it exists then it will be consumed into Schema::FooBar
+L<Moose::Role> class.  If it exists then it will be consumed into Schema::FooBar.
 
 =item Schema::ResultSet::FooBar
 
-Schema::ResultSet::FooBar is the resultset class for the table C<foo_bars>
+Schema::ResultSet::FooBar is the resultset class for the table C<foo_bars>.
 
 =item Schema::ResultSet::Role::FooBar
 
 During scaffolding L<Module::Pluggable> will be used to search for Schema::ResultSet::Role::FooBar, which
-should be a L<Moose::Role> class.  If it exists then it will be consumed into Schema::ResultSet::FooBar
+should be a L<Moose::Role> class.  If it exists then it will be consumed into Schema::ResultSet::FooBar.
 
 =back
 
 =head2 The _scaffold Role
 
-The _scaffold will define methods for each resultset. In our example above it will define a method C<foo_bar>
+The _scaffold will define methods for each resultset. In our example above it will define a method C<foo_bar>.
 
-It also has a method C<dbic> which will return the L<DBIx::Class::Schema> object
+It also has a method C<dbic> which will return the L<DBIx::Class::Schema> object.
 
 =head2 Example Schema Class
 
 The minimum requirement for a schema class is that it providers a method C<connect_args>. The
-result of calling this method will be passed to the connect method of L<DBIx::Class::Schema>
+result of calling this method will be passed to the connect method of L<DBIx::Class::Schema>.
 
   package Schema;
   use Moose;
@@ -721,7 +721,7 @@ With our example schema, searching of the C<foo_bars> table would be done with
 =item schema
 
 Required.
-A L<SQL::Translator::Object::Schema> object that the scaffolding will be generated from
+A L<SQL::Translator::Object::Schema> object that the scaffolding will be generated from.
 
 =item schema_class
 
