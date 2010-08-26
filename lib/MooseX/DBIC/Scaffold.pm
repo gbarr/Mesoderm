@@ -601,12 +601,43 @@ MooseX::DBIC::Scaffold - Schema class scaffold generator for DBIx::Class
 
 =head1 SYNOPSIS
 
+  use MooseX::DBIC::Scaffold;
+  use SQL::Translator;
+  use DBI;
+
+  my $dbh = DBI->connect($dsn, $user, $pass);
+
+  my $sqlt = SQL::Translator->new(dbh => $dbh, from => 'DBI');
+  $sqlt->parse(undef);
+
+  my $scaffold = MooseX::DBIC::Scaffold->new(
+    schema       => $sqlt->schema,
+    schema_class => 'My::Schema',
+  );
+
+  $scaffold->produce(\*STDOUT);
+
+
 =head1 DESCRIPTION
+
+C<MooseX::DBIC::Scaffold> creates a scaffold of code for L<DBIx::Class> using a schema object from
+L<SQL::Translator|http://github.com/arcanez/SQL-Translator>. At time of writing the version of
+L<SQL::Translator|http://github.com/arcanez/SQL-Translator> required is not available on CPAN and must be
+fetched directly from L<github|http://github.com/arcanez/SQL-Translator>
+
+The result is a hierarchy of packages describes below. L<Moose> is used so that any custom methods
+needed to be added to the result or resultset classes can be done by writing L<Moose::Role> classes.
+This alows separation between generated code and written code.
+
+C<MooseX::DBIC::Scaffold> defines methods to map table names to class names, relationships and
+columns to accessor methods. It is also possible to have any table, relationship or column
+excluded from the generated model. If the defaults do not meet your needs, then it is trvial to
+subclass C<MooseX::DBIC::Scaffold> and provide overrides
 
 =head2 Package Hierarchy
 
-Given a C<schema_class> name of C<Schema> and a schema containing a single table C<foo> the
-following packages would be created or search for
+Given a C<schema_class> name of C<Schema> and a schema containing a single table C<foo_bars> the
+following packages would be created or search for with the default settings
 
 =over
 
@@ -619,26 +650,44 @@ Top level schema class. The user needs to provide this themselves. See L</Exampl
 The main generated package that will be a L<Moose::Role> to be consumed into the top level schema
 class. See L</The _scaffold Role>
 
+Although the model generated is a hierarchy of packages, it is expected that all generated
+code be in one file loaded as Schema::_scaffold. This file contains all the generated code
+and should never be modified.
+
 =item Schema::_dbic
 
-A subclass of L<DBIx::Class> that will be used to register the generated classes.
+A subclass of L<DBIx::Class::Schema> that will be used to register the generated classes.
 
-=item Schema::Foo
+=item Schema::FooBar
 
-=item Schema::Role::Foo
+Schema::FooBar will be the result class for the table C<foo_bars>
 
-=item Schema::ResultSet::Foo
+=item Schema::Role::FooBar
 
-=item Schema::ResultSet::Role::Foo
+During scaffolding L<Module::Pluggable> will be used to search for Schema::Role::FooBar, which should be a
+L<Moose::Role> class.  If it exists then it will be consumed into Schema::FooBar
+
+=item Schema::ResultSet::FooBar
+
+Schema::ResultSet::FooBar is the resultset class for the table C<foo_bars>
+
+=item Schema::ResultSet::Role::FooBar
+
+During scaffolding L<Module::Pluggable> will be used to search for Schema::ResultSet::Role::FooBar, which
+should be a L<Moose::Role> class.  If it exists then it will be consumed into Schema::ResultSet::FooBar
 
 =back
 
 =head2 The _scaffold Role
 
+The _scaffold will define methods for each resultset. In our example above it will define a method C<foo_bar>
+
+It also has a method C<dbic> which will return the L<DBIx::Class::Schema> object
+
 =head2 Example Schema Class
 
 The minimum requirement for a schema class is that it providers a method C<connect_args>. The
-result of calling this method will be passed to the connect method of L<DBIx::Class>
+result of calling this method will be passed to the connect method of L<DBIx::Class::Schema>
 
   package Schema;
   use Moose;
@@ -659,6 +708,11 @@ Some other useful additions
   sub dbh {
     shift->dbic->storage->dbh;
   }
+
+With our example schema, searching of the C<foo_bars> table would be done with
+
+  my $schema = Schema->new;
+  $schema->foo_bar->search({id => 27});
 
 =head1 ATTRIBUTES
 
@@ -707,12 +761,131 @@ Defaults to C<resultset_class_namespace> plus C<::Role>
 
 =over
 
+=item table_components ( $table )
+
+Returns a list of L<DBIx::Class> components to be loaded by the result class
+
+=item column_components ( $column )
+
+Returns a list of L<DBIx::Class> components to be loaded by the result class
+
+=item table_roles ( $table )
+
+Returns a list of L<Moose::Role> classes to be comsumed into the result class
+Default is to join L<result_role_namespace|/result_role_namespace> with L<table_class_element|/table_class_element>, if the module
+can be found by L<Module::Pluggable>
+
+=item resultset_roles ( $table )
+
+Returns a list of L<Moose::Role> classes to be comsumed into the result class.
+Default is to join L<resultset_role_namespace|/resultset_role_namespace> with L<table_class_element|/table_class_element>, if the module
+can be found by L<Module::Pluggable>
+
+=item column_info ( $column )
+
+Returns a hash reference which will be serialized as the arguments passed to C<add_column>
+
+=item insert_default ( $column )
+
+Provides a hook to allow inserting objects to have default values set on columns if no value
+has been specified. It should return valid perl code that will be inserted into the generated
+code and will be evaluated in a scalar context
+
+=item ignore_table ( $table )
+
+=item ignore_column ( $column )
+
+=item ignore_index ( $index )
+
+=item ignore_constraint ( $constraint )
+
+=item ignore_relationship ( $relationship )
+
+Return a boolean to determine if the passed object should be excluded from the generated model.
+Default: 0
+
+=item relationship_accessor ( $relationship )
+
+Returns name for a relationship. Default is to call the method based on the relationship type.
+
+=item mapping_accessor ( $mapping )
+
+=item belongs_to_accessor ( $relationship )
+
+=item might_have_accessor ( $relationship )
+
+=item has_one_accessor ( $relationship )
+
+=item has_many_accessor ( $relationship )
+
+Return relationship accessor name.
+Default is to call L<to_singlular|/to_singlular> or L<to_plural|/to_plural> with the name for the foreign table.
+Which is called depends on the arity of the relationship
+
+=item column_accessor
+
+Return the accessor name for the column. Default it to return the column name.
+
+=item result_class ( $table )
+
+Return name for the result class.
+Default is to join L<result_class_namespace|/result_class_namespace> with L<table_class_element|/table_class_element>
+
+=item resultset_class
+
+Return name for the resultset class.
+Default is to join L<resultset_class_namespace|/resultset_class_namespace> with L<table_class_element|/table_class_element>
+
+=item table_moniker
+
+Return moniker used to register result class with L<DBIx::Class::Schema>.
+Default is to call L<to_singular|/to_singular> with the lowercase table name
+
+=item table_class_element
+
+Return package name element that will be prefixed with L<result_class_namespace|/result_class_namespace>,
+L<resultset_class_namespace|/resultset_class_namespace>, L<result_role_namespace|/result_role_namespace>
+and L<resultset_role_namespace|/resultset_role_namespace> to generate class names.
+Default takes the L<table_moniker|/table_moniker> and title-cases based on C<_> as a word separator
+
+=item to_singular ( $word )
+
+Utility method to return singular form of C<$word>.
+Default implementation uses L<Lingua::EN::Inflect::Number/to_S>
+
+=item to_plural ( $word )
+
+Utility method to return plural form of C<$word>.
+Default implementation uses L<Lingua::EN::Inflect::Number/to_PL>
+
+=item reciprocate_relationship ( $relationship )
+
+Create a relatonship which is the opposite of the given relationship.
+
+=item is_mapping_table ( $table )
+
+Return boolean to indicate if the table is a mapping table and many to many mapping relationships
+need to be created
+
+=item produce ( $fh )
+
+Generate code and write to filehandle
+
+=item build_relationship ( $constraint )
+
+Build a L<MooseX::DBIC::Scaffold::Relationship> object given a constraint
+
+=item build_mapping ( $relationship, $relationship )
+
+Build a L<MooseX::DBIC::Scaffold::Mapping> given relationship for a mant to many mapping
+
 =back
 
 =head1 SEE ALSO
 
 L<DBIx::Class>,
 L<Moose>,
+L<Moose::Role>,
 L<SQL::Translator|http://github.com/arcanez/SQL-Translator>
 
 At time of writing the version required is not available on CPAN and needs
@@ -720,7 +893,7 @@ to be fetched from github. L<http://github.com/arcanez/SQL-Translator>
 
 =head1 AUTHOR
 
-Graham Barr C<< <gbarr@cpan.org> >>
+Graham Barr <gbarr@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
