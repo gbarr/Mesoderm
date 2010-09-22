@@ -32,7 +32,7 @@ sub find {
 sub BUILD {
   my $self = shift;
   my $name = $self->name;
-  die "Component $name already exists\n" if exists $Registry{$name};
+  die "Component $name already exists\n" if $Registry{$name};
   $Registry{$name} = $self;
 }
 
