@@ -111,6 +111,8 @@ sub column_info {
   $info{default_value}     = $column->default_value;
   $info{is_nullable}       = $column->is_nullable ? 1 : 0;
   $info{is_auto_increment} = 1 if $column->is_auto_increment;
+  $info{accessor}          = $self->column_accessor($column);
+  delete $info{accessor} if $info{accessor} eq $column->name;
 
   if ($column->has_precision) {
     $info{size} = [int $column->length, int $column->precision];
