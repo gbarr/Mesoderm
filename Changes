@@ -1,4 +1,7 @@
 {{$NEXT}}
 
+0.102881 -- Fri Oct 15 17:33:29 CDT 2010
+  * Fix column_accessor override (Ask Bjørn Hansen)
+
 0.102880 -- Fri Oct 15 17:23:21 CDT 2010
   * Initial Release
