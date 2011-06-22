@@ -2,19 +2,19 @@
 ## vim: ts=8:sw=2:expandtab:shiftround
 ## ABSTRACT: Schema class scaffold generator for DBIx::Class
 
-package MooseX::DBIC::Scaffold;
+package Mesoderm;
 use Moose;
 
 use Lingua::EN::Inflect::Number qw(to_S to_PL);
 use Data::Dumper;
-use MooseX::DBIC::Scaffold::Component;
-use MooseX::DBIC::Scaffold::Relationship;
-use MooseX::DBIC::Scaffold::Mapping;
+use Mesoderm::Component;
+use Mesoderm::Relationship;
+use Mesoderm::Mapping;
 
 
 has 'schema' => (
   is       => 'ro',
-  isa      => 'SQL::Translator::Object::Schema',
+  isa      => 'SQL::Translator::Schema',
   required => 1,
 );
 
@@ -77,15 +77,16 @@ sub table_components {
   my @comp = qw(Core);
   my ($pk) = grep { $_->type eq 'PRIMARY KEY' } $table->get_indices;
   if ($pk ||= $table->primary_key) {
-    push @comp, 'PK::Auto' if grep { $_->is_auto_increment } $pk->get_columns;
+    push @comp, 'PK::Auto' if grep { $table->get_field($_)->is_auto_increment } $pk->fields;
   }
   else {
+    warn $table->name," has no PRIMARY KEY\n";
     foreach my $k ($table->get_constraints) {
-      warn $k->dump(1);
+      warn join " ", "",$k->type,$k->name,"(",$k->fields,")\n";
     }
   }
   push @comp, 'InflateColumn::DateTime'
-    if grep { $_->data_type =~ /^(DATE|DATETIME|TIMESTAMP)$/i } $table->get_columns;
+    if grep { $_->data_type =~ /^(DATE|DATETIME|TIMESTAMP)$/i } $table->get_fields;
   return @comp;
 }
 
@@ -107,18 +108,20 @@ sub column_info {
   my ($self, $column) = @_;
   my %info;
 
-  $info{data_type}         = $column->data_type;
-  $info{default_value}     = $column->default_value;
+  my $default_value = $column->default_value;
+  $default_value = undef if defined($default_value) and $default_value eq 'NULL';
+  $info{data_type}         = uc $column->data_type;
+  $info{default_value}     = $default_value;
   $info{is_nullable}       = $column->is_nullable ? 1 : 0;
   $info{is_auto_increment} = 1 if $column->is_auto_increment;
   $info{accessor}          = $self->column_accessor($column);
   delete $info{accessor} if $info{accessor} eq $column->name;
 
-  if ($column->has_precision) {
-    $info{size} = [int $column->length, int $column->precision];
+  if (my @size = map { int($_) } $column->size =~ /^(\d+),(\d+)$/) {
+    $info{size} = \@size;
   }
   else {
-    $info{size} = int $column->length;
+    $info{size} = int $column->size;
   }
 
   my %extra = $column->extra;
@@ -156,50 +159,50 @@ sub ignore_relationship { return 0 }
 
 sub _ignore_table {
   my ($self, $table) = @_;
-  my $ignore = $table->get_extra('ignore');
+  my $ignore = $table->extra('ignore');
   return $ignore if defined $ignore;
   $ignore = $self->ignore_table($table);
-  $table->add_extra(ignore => $ignore || 0);
+  $table->extra(ignore => $ignore || 0);
   return $ignore;
 }
 
 sub _ignore_column {
   my ($self, $column) = @_;
-  my $ignore = $column->get_extra('ignore');
+  my $ignore = $column->extra('ignore');
   return $ignore if defined $ignore;
   $ignore ||= $self->_ignore_table($column->table);
   $ignore ||= $self->ignore_column($column);
-  $column->add_extra(ignore => $ignore || 0);
+  $column->extra(ignore => $ignore || 0);
   return $ignore;
 }
 
 sub _ignore_index {
   my ($self, $index) = @_;
-  my $ignore = $index->get_extra('ignore');
+  my $ignore = $index->extra('ignore');
   return $ignore if defined $ignore;
   $ignore ||= $self->_ignore_table($index->table);
-  $ignore ||= grep { $self->_ignore_column($_) } $index->get_columns;
+  $ignore ||= grep { $self->_ignore_column($index->table->get_field($_)) } $index->fields;
   $ignore ||= $self->ignore_index($index);
-  $index->add_extra(ignore => $ignore || 0);
+  $index->extra(ignore => $ignore || 0);
   return $ignore;
 }
 
 sub _ignore_constraint {
   my ($self, $constraint) = @_;
-  my $ignore = $constraint->get_extra('ignore');
+  my $ignore = $constraint->extra('ignore');
   return $ignore if defined $ignore;
   $ignore ||= $self->_ignore_table($constraint->table);
-  $ignore ||= grep { $self->_ignore_column($_) } $constraint->get_columns;
+  $ignore ||= grep { $self->_ignore_column($_) } $constraint->fields;
   unless ($ignore) {
     my $table = $constraint->table->schema->get_table($constraint->reference_table);
     $ignore ||= !$table || $self->_ignore_table($table);
     $ignore ||= grep {
-      my $c = $table->get_column($_);
+      my $c = $table->get_field($_);
       !$c || $self->_ignore_column($c)
-    } $constraint->reference_columns;
+    } $constraint->reference_fields;
   }
   $ignore ||= $self->ignore_constraint($constraint);
-  $constraint->add_extra(ignore => $ignore || 0);
+  $constraint->extra(ignore => $ignore || 0);
   return $ignore;
 }
 
@@ -282,7 +285,7 @@ sub reciprocate_relationship {
 
 sub is_mapping_table {
   my ($self, $t) = @_;
-  my $rel = $t->get_extra('relationships') or return 0;
+  my $rel = $t->extra('relationships') or return 0;
   ## FIXME, need better checks to determine a mapping table
   return 0 unless @$rel == 2;
   return 1;
@@ -294,32 +297,31 @@ sub produce {
 
   foreach my $t ($schema->get_tables) {
     if ($self->_ignore_table($t)) {
-      $schema->remove_table($t->name);
+      $schema->drop_table($t->name);
       next;
     }
-    foreach my $c ($t->get_columns) {
-      $t->remove_column($c->name) if $self->_ignore_column($c);
+    foreach my $c ($t->get_fields) {
+      $t->drop_field($c->name) if $self->_ignore_column($c);
     }
   }
 
   foreach my $t ($schema->get_tables) {
     foreach my $i ($t->get_indices) {
-      $t->remove_index($i->name) if $self->_ignore_index($i);
+      $t->drop_index($i->name) if $self->_ignore_index($i);
     }
 
     foreach my $c ($t->get_constraints) {
       next if $c->type ne 'FOREIGN KEY' or $self->_ignore_constraint($c);
-
       if (my $r1 = $self->build_relationship($c)) {
         unless ($self->ignore_relationship($r1)) {
-          my $rel1 = $r1->table->get_extra('relationships');
-          $r1->table->add_extra(relationships => $rel1 = []) unless $rel1;
+          my $rel1 = $r1->table->extra('relationships');
+          $r1->table->extra(relationships => $rel1 = []) unless $rel1;
           push @$rel1, $r1;
         }
         my $r2 = $self->reciprocate_relationship($r1);
         if ($r2 and !$self->ignore_relationship($r2)) {
-          my $rel2 = $r2->table->get_extra('relationships');
-          $r2->table->add_extra(relationships => $rel2 = []) unless $rel2;
+          my $rel2 = $r2->table->extra('relationships');
+          $r2->table->extra(relationships => $rel2 = []) unless $rel2;
           push @$rel2, $r2;
 
         }
@@ -329,14 +331,14 @@ sub produce {
 
   foreach my $t ($schema->get_tables) {
     if ($self->is_mapping_table($t)) {
-      my $rel = $t->get_extra('relationships');
+      my $rel = $t->extra('relationships');
       next unless $rel and @$rel == 2;
       my ($left, $right) = @$rel;
       for my $loop (1, 2) {
         my $lr  = $left->reciprocal;
         my $m   = $self->build_mapping($lr, $right);
-        my $map = $lr->table->get_extra('mappings');
-        $lr->table->add_extra(mappings => $map = []) unless $map;
+        my $map = $lr->table->extra('mappings');
+        $lr->table->extra(mappings => $map = []) unless $map;
         push @$map, $m;
 
         ($left, $right) = ($right, $left);
@@ -346,12 +348,12 @@ sub produce {
 
   # Build accessor names
   foreach my $t ($schema->get_tables) {
-    my $rel = $t->get_extra('relationships') or next;
+    my $rel = $t->extra('relationships') or next;
     $_->accessor($self->relationship_accessor($_)) for @$rel;
   }
 
   foreach my $t ($schema->get_tables) {
-    my $map = $t->get_extra('mappings') or next;
+    my $map = $t->extra('mappings') or next;
     $_->accessor($self->mapping_accessor($_)) for @$map;
   }
 
@@ -361,11 +363,11 @@ sub produce {
 sub build_relationship {
   my ($self, $c) = @_;
   my $table     = $c->table;
-  my @columns   = $c->get_columns;
+  my @columns   = $c->fields;
   my $f_table   = $table->schema->get_table($c->reference_table);
-  my @f_columns = map { $f_table->get_column($_) } $c->reference_columns;
+  my @f_columns = map { $f_table->get_field($_) } $c->reference_fields;
 
-  my $r = MooseX::DBIC::Scaffold::Relationship->new(
+  my $r = Mesoderm::Relationship->new(
     name            => $c->name,
     table           => $table,
     columns         => \@columns,
@@ -377,7 +379,7 @@ sub build_relationship {
 sub build_mapping {
   my ($self, $left, $right) = @_;
 
-  my $r = MooseX::DBIC::Scaffold::Mapping->new(
+  my $r = Mesoderm::Mapping->new(
     name  => $left->name . "__" . $right->name,
     left  => $left,
     right => $right,
@@ -458,7 +460,7 @@ sub write_table {
 
   print $fh "  __PACKAGE__->table('", $table->name, "');\n";
   print $fh "  __PACKAGE__->add_columns(\n";
-  foreach my $column ($table->get_columns) {
+  foreach my $column ($table->get_fields) {
     my $data = _dump_data($self->column_info($column), "    ");
     if (defined(my $default = $self->insert_default($column))) {
       $insert_default{$column->name} = $default;
@@ -471,19 +473,19 @@ sub write_table {
 
   my ($pk) = grep { $_->type eq 'PRIMARY KEY' } $table->get_indices;
   if ($pk ||= $table->primary_key) {
-    my @pk_cols = map { $_->name } $pk->get_columns;
+    my @pk_cols = $pk->fields;
     print $fh "  __PACKAGE__->set_primary_key(qw/ @pk_cols /);\n";
   }
 
-  foreach my $constraint (sort { $a->name cmp $b->name } $table->get_indices) {
+  foreach my $constraint (sort { $a->name cmp $b->name } $table->get_constraints) {
     next if $constraint->name eq 'PRIMARY' or $constraint->type ne 'UNIQUE';
-    my @cols = map { $_->name } $constraint->get_columns;
+    my @cols = $constraint->fields;
     my $accessor = $constraint->name;
 
     print $fh "  __PACKAGE__->add_unique_constraint( $accessor => [qw/ @cols /]);\n";
   }
 
-  my @rel = @{$table->get_extra('relationships') || []};
+  my @rel = @{$table->extra('relationships') || []};
   foreach my $rel (sort { $a->accessor cmp $b->accessor } @rel) {
     my $foreign_class   = $self->result_class($rel->foreign_table);
     my $type            = $rel->type;
@@ -496,7 +498,7 @@ sub write_table {
     print $fh $column_map, $attr, ");\n";
   }
 
-  my @map = @{$table->get_extra('mappings') || []};
+  my @map = @{$table->extra('mappings') || []};
   foreach my $map (sort { $a->accessor cmp $b->accessor } @map) {
     printf $fh "  __PACKAGE__->many_to_many( '%s' => qw[ %s %s ]);\n",
       $map->accessor, $map->left->accessor, $map->right->accessor;
@@ -532,7 +534,7 @@ sub write_preamble {
   print $fh "#\n";
   print $fh "# *** DO NOT EDIT THIS FILE ***\n";
   printf $fh "# Generated on %s UTC, by\n", scalar gmtime();
-  local ($MooseX::DBIC::Scaffold::VERSION) = (0) unless defined $MooseX::DBIC::Scaffold::VERSION;
+  local ($Mesoderm::VERSION) = (0) unless defined $Mesoderm::VERSION;
   foreach my $class ($self->meta->linearized_isa) {
     my $version = $class->VERSION;
     $version = 'undef' unless defined $version;
@@ -564,7 +566,7 @@ sub write_components {
   foreach my $comp ($self->table_components($table)) {
     $comp{$comp} = [];
   }
-  foreach my $column ($table->get_columns) {
+  foreach my $column ($table->get_fields) {
     foreach my $comp ($self->column_components($column)) {
       push @{$comp{$comp}}, $column->name;
     }
@@ -573,7 +575,7 @@ sub write_components {
 
   my @comp =
     sort { $a->order <=> $b->order or $a->name cmp $b->name }
-    map { MooseX::DBIC::Scaffold::Component->find($_) }
+    map { Mesoderm::Component->find($_) }
     keys %comp;
 
   my $list = join " ", map { $_->name } @comp;
@@ -599,11 +601,11 @@ __END__
 
 =head1 NAME
 
-MooseX::DBIC::Scaffold - Schema class scaffold generator for DBIx::Class
+Mesoderm - Schema class scaffold generator for DBIx::Class
 
 =head1 SYNOPSIS
 
-  use MooseX::DBIC::Scaffold;
+  use Mesoderm;
   use SQL::Translator;
   use DBI;
 
@@ -612,7 +614,7 @@ MooseX::DBIC::Scaffold - Schema class scaffold generator for DBIx::Class
   my $sqlt = SQL::Translator->new(dbh => $dbh, from => 'DBI');
   $sqlt->parse(undef);
 
-  my $scaffold = MooseX::DBIC::Scaffold->new(
+  my $scaffold = Mesoderm->new(
     schema       => $sqlt->schema,
     schema_class => 'My::Schema',
   );
@@ -622,7 +624,7 @@ MooseX::DBIC::Scaffold - Schema class scaffold generator for DBIx::Class
 
 =head1 DESCRIPTION
 
-C<MooseX::DBIC::Scaffold> creates a scaffold of code for L<DBIx::Class> using a schema object from
+C<Mesoderm> creates a scaffold of code for L<DBIx::Class> using a schema object from
 L<SQL::Translator|http://github.com/arcanez/SQL-Translator>. At time of writing the version of
 L<SQL::Translator|http://github.com/arcanez/SQL-Translator> required is not available on CPAN and must be
 fetched directly from L<github|http://github.com/arcanez/SQL-Translator>.
@@ -631,10 +633,10 @@ The result is a hierarchy of packages describes below. L<Moose> is used so that 
 needed to be added to the result or resultset classes can be done by writing L<Moose::Role> classes.
 This allows separation between generated code and written code.
 
-C<MooseX::DBIC::Scaffold> defines methods to map table names to class names, relationships and
+C<Mesoderm> defines methods to map table names to class names, relationships and
 columns to accessor methods. It is also possible to have any table, relationship or column
 excluded from the generated model. If the defaults do not meet your needs, then it is trvial to
-subclass C<MooseX::DBIC::Scaffold> and provide overrides.
+subclass C<Mesoderm> and provide overrides.
 
 =head2 Package Hierarchy
 
@@ -875,11 +877,11 @@ Generate code and write to filehandle
 
 =item build_relationship ( $constraint )
 
-Build a L<MooseX::DBIC::Scaffold::Relationship> object given a constraint
+Build a L<Mesoderm::Relationship> object given a constraint
 
 =item build_mapping ( $relationship, $relationship )
 
-Build a L<MooseX::DBIC::Scaffold::Mapping> given relationship for a mant to many mapping
+Build a L<Mesoderm::Mapping> given relationship for a mant to many mapping
 
 =back
 

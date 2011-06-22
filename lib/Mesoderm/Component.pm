@@ -1,7 +1,7 @@
 ## Copyright (C) Graham Barr
 ## vim: ts=8:sw=2:expandtab:shiftround
 
-package MooseX::DBIC::Scaffold::Component;
+package Mesoderm::Component;
 use Moose;
 
 our %Registry;

@@ -4,5 +4,5 @@
 
 use strict;
 use warnings;
-use MooseX::DBIC::Scaffold::Command;
-MooseX::DBIC::Scaffold::Command->new_with_options->execute;
+use Mesoderm::Command;
+Mesoderm::Command->new_with_options->execute;

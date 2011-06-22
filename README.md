@@ -1,14 +1,14 @@
-# MooseX::DBIC::Scaffold
+# Mesoderm
 
 Generate DBIx::Class classes using Moose
 
-MooseX::DBIC::Scaffold creates a scaffold of code for [DBIx::Class](http://search.cpan.org/perldoc?DBIx::Class) using a schema
+Mesoderm creates a scaffold of code for [DBIx::Class](http://search.cpan.org/perldoc?DBIx::Class) using a schema
 object from [SQL::Translator](http://github.com/arcanez/SQL-Translator).
 
 Currently the version of SQL::Translator required is not available on CPAN and must be
 fetched directly from github http://github.com/arcanez/SQL-Translator
 
-There are many other scaffold generators around. MooseX::DBIC::Scaffold attempts
+There are many other scaffold generators around. Mesoderm attempts
 to bring some of the best features from those along with some new features.
 
 ## Features
@@ -22,7 +22,7 @@ to bring some of the best features from those along with some new features.
 
 ## License
 
-This software is copyright (c) 2010 by Graham Barr <gbarr@pobox.com>
+This software is copyright (c) 2010-2011 by Graham Barr <gbarr@pobox.com>
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

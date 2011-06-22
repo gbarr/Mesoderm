@@ -1,7 +1,7 @@
 ## Copyright (C) Graham Barr
 ## vim: ts=8:sw=2:expandtab:shiftround
 
-package MooseX::DBIC::Scaffold::Relationship;
+package Mesoderm::Relationship;
 
 use Moose;
 
@@ -28,7 +28,7 @@ has attrs => (
 sub _build_reciprocal {
   my $self = shift;
 
-  MooseX::DBIC::Scaffold::Relationship->new(
+  Mesoderm::Relationship->new(
     name            => $self->foreign_table->name . "__" . $self->name,
     table           => $self->foreign_table,
     columns         => [$self->foreign_columns],
@@ -54,10 +54,10 @@ sub BUILD {
   my $f_col    = join " ", sort { $a cmp $b } map { $_->name } @f_col;
   my $f_unique = '';
 
-  foreach my $i ($self->foreign_table->get_indices) {
-    my @i_col = $i->get_columns;
+  foreach my $i ($self->foreign_table->get_constraints) {
+    my @i_col = $i->fields;
     next unless @i_col == @f_col;
-    next unless $f_col eq join " ", sort { $a cmp $b } map { $_->name } @i_col;
+    next unless $f_col eq join " ", sort { $a cmp $b } @i_col;
     $f_unique = 'PRIMARY', last if $i->type =~ /PRIMARY/;
     $f_unique ||= 'UNIQUE' if $i->type =~ /UNIQUE/;
   }

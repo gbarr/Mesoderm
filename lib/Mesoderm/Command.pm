@@ -1,7 +1,7 @@
 ## Copyright (C) Graham Barr
 ## vim: ts=8:sw=2:expandtab:shiftround
 
-package MooseX::DBIC::Scaffold::Command;
+package Mesoderm::Command;
 use Moose;
 with 'MooseX::Getopt';
 
@@ -31,7 +31,7 @@ has scaffold_class => (
   traits  => ['Getopt'],
   is      => 'rw',
   isa     => 'Str',
-  default => 'MooseX::DBIC::Scaffold',
+  default => 'Mesoderm',
 );
 
 has output => (
@@ -61,10 +61,16 @@ sub execute {
 
   Class::MOP::load_class($scaffold_class);
 
-  my $dbh = DBI->connect($self->dsn, $self->user, $self->pass);
-
-  my $sqlt = SQL::Translator->new(dbh => $dbh, from => 'DBI');
-  $sqlt->parse(undef);
+  my $sqlt = SQL::Translator->new(
+    parser      => 'DBI',
+    parser_args => {
+      dsn         => $self->dsn,
+      db_user     => $self->user,
+      db_password => $self->pass,
+    },
+  );
+  
+  $sqlt->parser->($sqlt);
 
   my $scaffold = $scaffold_class->new(
     schema       => $sqlt->schema,
