@@ -62,14 +62,15 @@ sub BUILD {
     $f_unique ||= 'UNIQUE' if $i->type =~ /UNIQUE/;
   }
 
+  my $optional = grep { $_->is_nullable } $self->columns;
   if ($f_unique eq 'PRIMARY') {
     $self->type('belongs_to');
-    $self->add_attr(join_type => 'left') if grep { $_->is_nullable } $self->columns;
+    $self->add_attr(join_type => 'left') if $optional;
   }
   elsif ($f_unique eq 'UNIQUE') {
 
     # could be has_one, but cannot know if the record *will* be there
-    $self->type('might_have');
+    $self->type($optional ? 'might_have' : 'belongs_to');
   }
   else {
     $self->type('has_many');

@@ -82,6 +82,110 @@ has 't1' => (
 }
 
 ##
+## Table: t1a
+##
+
+has 't1a' => (
+  is      => 'ro',
+  lazy    => 1,
+  isa     => 'Schema::ResultSet::T1a',
+  default => sub { shift->dbic->resultset('t1a'); },
+);
+
+{
+  package Schema::T1a;
+  use Moose;
+  extends 'DBIx::Class';
+
+  __PACKAGE__->load_components(qw/ PK::Auto Core /);
+
+  with 'Schema::_mesoderm';
+  no Moose;
+
+  __PACKAGE__->table('t1a');
+  __PACKAGE__->add_columns(
+    id => {
+      data_type => 'INT',
+      default_value => undef,
+      is_auto_increment => 1,
+      is_nullable => 0,
+      size => 11
+    },
+    name => {
+      data_type => 'VARCHAR',
+      default_value => undef,
+      is_nullable => 1,
+      size => 40
+    },
+  );
+  __PACKAGE__->set_primary_key(qw/ id /);
+  __PACKAGE__->add_unique_constraint( name => [qw/ name /]);
+  __PACKAGE__->has_many( t3s => 'Schema::T3',{
+    'foreign.t' => 'self.id'
+  });
+  { package Schema::ResultSet::T1a;
+    use Moose;
+    extends 'DBIx::Class::ResultSet';
+    with 'Schema::_mesoderm';
+    no Moose;
+  }
+  __PACKAGE__->resultset_class('Schema::ResultSet::T1a');
+  Schema::_dbic->register_class( t1a => __PACKAGE__ );
+}
+
+##
+## Table: t1b
+##
+
+has 't1b' => (
+  is      => 'ro',
+  lazy    => 1,
+  isa     => 'Schema::ResultSet::T1b',
+  default => sub { shift->dbic->resultset('t1b'); },
+);
+
+{
+  package Schema::T1b;
+  use Moose;
+  extends 'DBIx::Class';
+
+  __PACKAGE__->load_components(qw/ PK::Auto Core /);
+
+  with 'Schema::_mesoderm';
+  no Moose;
+
+  __PACKAGE__->table('t1b');
+  __PACKAGE__->add_columns(
+    id => {
+      data_type => 'INT',
+      default_value => undef,
+      is_auto_increment => 1,
+      is_nullable => 0,
+      size => 11
+    },
+    name => {
+      data_type => 'VARCHAR',
+      default_value => undef,
+      is_nullable => 1,
+      size => 40
+    },
+  );
+  __PACKAGE__->set_primary_key(qw/ id /);
+  __PACKAGE__->add_unique_constraint( name => [qw/ name /]);
+  __PACKAGE__->has_many( t4s => 'Schema::T4',{
+    'foreign.t' => 'self.name'
+  });
+  { package Schema::ResultSet::T1b;
+    use Moose;
+    extends 'DBIx::Class::ResultSet';
+    with 'Schema::_mesoderm';
+    no Moose;
+  }
+  __PACKAGE__->resultset_class('Schema::ResultSet::T1b');
+  Schema::_dbic->register_class( t1b => __PACKAGE__ );
+}
+
+##
 ## Table: t2
 ##
 
@@ -133,6 +237,108 @@ has 't2' => (
   }
   __PACKAGE__->resultset_class('Schema::ResultSet::T2');
   Schema::_dbic->register_class( t2 => __PACKAGE__ );
+}
+
+##
+## Table: t3
+##
+
+has 't3' => (
+  is      => 'ro',
+  lazy    => 1,
+  isa     => 'Schema::ResultSet::T3',
+  default => sub { shift->dbic->resultset('t3'); },
+);
+
+{
+  package Schema::T3;
+  use Moose;
+  extends 'DBIx::Class';
+
+  __PACKAGE__->load_components(qw/ PK::Auto Core /);
+
+  with 'Schema::_mesoderm';
+  no Moose;
+
+  __PACKAGE__->table('t3');
+  __PACKAGE__->add_columns(
+    id => {
+      data_type => 'INT',
+      default_value => undef,
+      is_auto_increment => 1,
+      is_nullable => 0,
+      size => 11
+    },
+    t => {
+      data_type => 'INT',
+      default_value => undef,
+      is_nullable => 0,
+      size => 11
+    },
+  );
+  __PACKAGE__->set_primary_key(qw/ id /);
+  __PACKAGE__->belongs_to( t1a => 'Schema::T1a',{
+    'foreign.id' => 'self.t'
+  });
+  { package Schema::ResultSet::T3;
+    use Moose;
+    extends 'DBIx::Class::ResultSet';
+    with 'Schema::_mesoderm';
+    no Moose;
+  }
+  __PACKAGE__->resultset_class('Schema::ResultSet::T3');
+  Schema::_dbic->register_class( t3 => __PACKAGE__ );
+}
+
+##
+## Table: t4
+##
+
+has 't4' => (
+  is      => 'ro',
+  lazy    => 1,
+  isa     => 'Schema::ResultSet::T4',
+  default => sub { shift->dbic->resultset('t4'); },
+);
+
+{
+  package Schema::T4;
+  use Moose;
+  extends 'DBIx::Class';
+
+  __PACKAGE__->load_components(qw/ PK::Auto Core /);
+
+  with 'Schema::_mesoderm';
+  no Moose;
+
+  __PACKAGE__->table('t4');
+  __PACKAGE__->add_columns(
+    id => {
+      data_type => 'INT',
+      default_value => undef,
+      is_auto_increment => 1,
+      is_nullable => 0,
+      size => 11
+    },
+    t => {
+      data_type => 'VARCHAR',
+      default_value => undef,
+      is_nullable => 0,
+      size => 40
+    },
+  );
+  __PACKAGE__->set_primary_key(qw/ id /);
+  __PACKAGE__->belongs_to( t1b => 'Schema::T1b',{
+    'foreign.name' => 'self.t'
+  });
+  { package Schema::ResultSet::T4;
+    use Moose;
+    extends 'DBIx::Class::ResultSet';
+    with 'Schema::_mesoderm';
+    no Moose;
+  }
+  __PACKAGE__->resultset_class('Schema::ResultSet::T4');
+  Schema::_dbic->register_class( t4 => __PACKAGE__ );
 }
 
 
