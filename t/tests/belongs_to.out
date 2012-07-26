@@ -45,7 +45,7 @@ has 't1' => (
   use Moose;
   extends 'DBIx::Class';
 
-  __PACKAGE__->load_components(qw/ PK::Auto Core /);
+  __PACKAGE__->load_components(qw/ Core /);
 
   with 'Schema::_mesoderm';
   no Moose;
@@ -97,7 +97,7 @@ has 't1a' => (
   use Moose;
   extends 'DBIx::Class';
 
-  __PACKAGE__->load_components(qw/ PK::Auto Core /);
+  __PACKAGE__->load_components(qw/ Core /);
 
   with 'Schema::_mesoderm';
   no Moose;
@@ -149,7 +149,7 @@ has 't1b' => (
   use Moose;
   extends 'DBIx::Class';
 
-  __PACKAGE__->load_components(qw/ PK::Auto Core /);
+  __PACKAGE__->load_components(qw/ Core /);
 
   with 'Schema::_mesoderm';
   no Moose;
@@ -201,7 +201,7 @@ has 't2' => (
   use Moose;
   extends 'DBIx::Class';
 
-  __PACKAGE__->load_components(qw/ PK::Auto Core /);
+  __PACKAGE__->load_components(qw/ Core /);
 
   with 'Schema::_mesoderm';
   no Moose;
@@ -255,7 +255,7 @@ has 't3' => (
   use Moose;
   extends 'DBIx::Class';
 
-  __PACKAGE__->load_components(qw/ PK::Auto Core /);
+  __PACKAGE__->load_components(qw/ Core /);
 
   with 'Schema::_mesoderm';
   no Moose;
@@ -306,7 +306,7 @@ has 't4' => (
   use Moose;
   extends 'DBIx::Class';
 
-  __PACKAGE__->load_components(qw/ PK::Auto Core /);
+  __PACKAGE__->load_components(qw/ Core /);
 
   with 'Schema::_mesoderm';
   no Moose;

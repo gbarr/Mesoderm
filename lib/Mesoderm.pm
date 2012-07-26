@@ -81,16 +81,6 @@ sub _build__role_map {
 sub table_components {
   my ($self, $table) = @_;
   my @comp = qw(Core);
-  my ($pk) = grep { $_->type eq 'PRIMARY KEY' } $table->get_indices;
-  if ($pk ||= $table->primary_key) {
-    push @comp, 'PK::Auto' if grep { $table->get_field($_)->is_auto_increment } $pk->fields;
-  }
-  else {
-    warn $table->name," has no PRIMARY KEY\n";
-    foreach my $k ($table->get_constraints) {
-      warn join " ", "",$k->type,$k->name,"(",$k->fields,")\n";
-    }
-  }
   push @comp, 'InflateColumn::DateTime'
     if grep { $_->data_type =~ /^(DATE|DATETIME|TIMESTAMP)$/i } $table->get_fields;
   return @comp;
