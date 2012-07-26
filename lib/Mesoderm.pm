@@ -418,6 +418,7 @@ sub _dump_data {
   local $Data::Dumper::Indent    = 1;
   local $Data::Dumper::Quotekeys = 0;
   local $Data::Dumper::Sortkeys  = 1;
+  local $Data::Dumper::Deepcopy  = 1;
   my $data = Data::Dumper::Dumper(shift);
   if (my $indent = shift) {
     $data =~ s/^/$indent/mg;
