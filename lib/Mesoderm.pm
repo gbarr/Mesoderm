@@ -303,10 +303,12 @@ sub produce {
 
   foreach my $t ($schema->get_tables) {
     foreach my $i ($t->get_indices) {
+      $i->fields(grep { s/\(\d+\)//; 1 } $i->fields);    # remove column prefix length
       $t->drop_index($i->name) if $self->_ignore_index($i);
     }
 
     foreach my $c ($t->get_constraints) {
+      $c->fields(grep { s/\(\d+\)//; 1 } $c->fields);    # remove column prefix length
       next if $c->type ne 'FOREIGN KEY' or $self->_ignore_constraint($c);
       if (my $r1 = $self->build_relationship($c)) {
         unless ($self->ignore_relationship($r1)) {
