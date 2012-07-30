@@ -1,5 +1,11 @@
 {{$NEXT}}
 
+0.122120 -- Mon Jul 30 15:37:43 CDT 2012
+  * Avoid "Package 'Mesoderm' already declared with version" from Module::Metadata
+  * PK::Auto is included by the Core component
+  * Avoid Data::Dumper attempting to preserve common references
+  * Fixup column names from an index that uses a prefix length of the column
+
 0.121140 -- Mon Apr 23 18:53:28 CDT 2012
   * Add tests
   * Fix might_have/belongs_to relationship selection
