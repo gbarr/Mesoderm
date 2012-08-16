@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+0.122290 -- Thu Aug 16 17:55:30 CDT 2012
+  * Include all roles in a single call to with
+
 0.122120 -- Mon Jul 30 15:37:43 CDT 2012
   * Avoid "Package 'Mesoderm' already declared with version" from Module::Metadata
   * PK::Auto is included by the Core component
