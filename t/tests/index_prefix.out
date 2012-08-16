@@ -47,7 +47,9 @@ has 't1' => (
 
   __PACKAGE__->load_components(qw/ Core /);
 
-  with 'Schema::_mesoderm';
+  with qw(
+    Schema::_mesoderm
+    );
   no Moose;
 
   __PACKAGE__->table('t1');
@@ -71,7 +73,9 @@ has 't1' => (
   { package Schema::ResultSet::T1;
     use Moose;
     extends 'DBIx::Class::ResultSet';
-    with 'Schema::_mesoderm';
+    with qw(
+      Schema::_mesoderm
+      );
     no Moose;
   }
   __PACKAGE__->resultset_class('Schema::ResultSet::T1');

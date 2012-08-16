@@ -47,7 +47,9 @@ has 't1' => (
 
   __PACKAGE__->load_components(qw/ Core /);
 
-  with 'Schema::_mesoderm';
+  with qw(
+    Schema::_mesoderm
+    );
   no Moose;
 
   __PACKAGE__->table('t1');
@@ -74,7 +76,9 @@ has 't1' => (
   { package Schema::ResultSet::T1;
     use Moose;
     extends 'DBIx::Class::ResultSet';
-    with 'Schema::_mesoderm';
+    with qw(
+      Schema::_mesoderm
+      );
     no Moose;
   }
   __PACKAGE__->resultset_class('Schema::ResultSet::T1');
@@ -99,7 +103,9 @@ has 't1a' => (
 
   __PACKAGE__->load_components(qw/ Core /);
 
-  with 'Schema::_mesoderm';
+  with qw(
+    Schema::_mesoderm
+    );
   no Moose;
 
   __PACKAGE__->table('t1a');
@@ -126,7 +132,9 @@ has 't1a' => (
   { package Schema::ResultSet::T1a;
     use Moose;
     extends 'DBIx::Class::ResultSet';
-    with 'Schema::_mesoderm';
+    with qw(
+      Schema::_mesoderm
+      );
     no Moose;
   }
   __PACKAGE__->resultset_class('Schema::ResultSet::T1a');
@@ -151,7 +159,9 @@ has 't1b' => (
 
   __PACKAGE__->load_components(qw/ Core /);
 
-  with 'Schema::_mesoderm';
+  with qw(
+    Schema::_mesoderm
+    );
   no Moose;
 
   __PACKAGE__->table('t1b');
@@ -178,7 +188,9 @@ has 't1b' => (
   { package Schema::ResultSet::T1b;
     use Moose;
     extends 'DBIx::Class::ResultSet';
-    with 'Schema::_mesoderm';
+    with qw(
+      Schema::_mesoderm
+      );
     no Moose;
   }
   __PACKAGE__->resultset_class('Schema::ResultSet::T1b');
@@ -203,7 +215,9 @@ has 't2' => (
 
   __PACKAGE__->load_components(qw/ Core /);
 
-  with 'Schema::_mesoderm';
+  with qw(
+    Schema::_mesoderm
+    );
   no Moose;
 
   __PACKAGE__->table('t2');
@@ -232,7 +246,9 @@ has 't2' => (
   { package Schema::ResultSet::T2;
     use Moose;
     extends 'DBIx::Class::ResultSet';
-    with 'Schema::_mesoderm';
+    with qw(
+      Schema::_mesoderm
+      );
     no Moose;
   }
   __PACKAGE__->resultset_class('Schema::ResultSet::T2');
@@ -257,7 +273,9 @@ has 't3' => (
 
   __PACKAGE__->load_components(qw/ Core /);
 
-  with 'Schema::_mesoderm';
+  with qw(
+    Schema::_mesoderm
+    );
   no Moose;
 
   __PACKAGE__->table('t3');
@@ -283,7 +301,9 @@ has 't3' => (
   { package Schema::ResultSet::T3;
     use Moose;
     extends 'DBIx::Class::ResultSet';
-    with 'Schema::_mesoderm';
+    with qw(
+      Schema::_mesoderm
+      );
     no Moose;
   }
   __PACKAGE__->resultset_class('Schema::ResultSet::T3');
@@ -308,7 +328,9 @@ has 't4' => (
 
   __PACKAGE__->load_components(qw/ Core /);
 
-  with 'Schema::_mesoderm';
+  with qw(
+    Schema::_mesoderm
+    );
   no Moose;
 
   __PACKAGE__->table('t4');
@@ -334,7 +356,9 @@ has 't4' => (
   { package Schema::ResultSet::T4;
     use Moose;
     extends 'DBIx::Class::ResultSet';
-    with 'Schema::_mesoderm';
+    with qw(
+      Schema::_mesoderm
+      );
     no Moose;
   }
   __PACKAGE__->resultset_class('Schema::ResultSet::T4');

@@ -455,7 +455,7 @@ sub write_table {
 
   my $comp_init = $self->write_components($fh, $table);
 
-  print $fh "  with '$_';\n" for $self->table_roles($table), $mesoderm_role;
+  print $fh "  with qw(",join("\n    ","",$self->table_roles($table), $mesoderm_role ,");\n");
   print $fh "  no Moose;\n\n";
 
   print $fh "  __PACKAGE__->table('", $table->name, "');\n";
@@ -518,7 +518,7 @@ sub write_table {
   print $fh "  { package $resultset_class;\n";
   print $fh "    use Moose;\n";
   print $fh "    extends 'DBIx::Class::ResultSet';\n";
-  print $fh "    with '$_';\n" for $self->resultset_roles($table), $mesoderm_role;
+  print $fh "    with qw(",join("\n      ","",$self->resultset_roles($table), $mesoderm_role ,");\n");
   print $fh "    no Moose;\n";
   print $fh "  }\n";
   print $fh "  __PACKAGE__->resultset_class('$resultset_class');\n";
