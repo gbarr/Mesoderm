@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+0.131260 -- Mon May 06 10:06:23 CDT 2013
+  * Add resultset_components
+
 0.122290 -- Thu Aug 16 17:55:30 CDT 2012
   * Include all roles in a single call to with
 
