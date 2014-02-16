@@ -59,7 +59,7 @@ sub execute {
   my $schema_class   = $self->schema_class;
   my $scaffold_class = $self->scaffold_class;
 
-  Class::MOP::load_class($scaffold_class);
+  Class::Load::load_class($scaffold_class);
 
   my $sqlt = SQL::Translator->new(
     parser      => 'DBI',
