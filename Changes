@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+0.140780 -- Wed Mar 19 16:55:31 CDT 2014
+  * Use Class::Load
+
 0.131260 -- Mon May 06 10:06:23 CDT 2013
   * Add resultset_components
 
